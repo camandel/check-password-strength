@@ -10,6 +10,42 @@ import (
 	"testing"
 )
 
+func TestRedactPassword(t *testing.T) {
+
+	tests := []struct {
+		name string
+		in   string
+		out  string
+	}{
+		{
+			name: "Short password",
+			in:   "pwd",
+			out:  "p******d",
+		},
+		{
+			name: "Long password",
+			in:   "passssswwwwwoooorrrrdddd",
+			out:  "p******d",
+		},
+		{
+			name: "Empty password",
+			in:   "",
+			out:  "********",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			p := redactPassword(tt.in)
+
+			if !reflect.DeepEqual(tt.out, p) {
+				t.Fatalf("got %s, expected %s", p, tt.out)
+			}
+
+		})
+	}
+}
 func TestReadCsv(t *testing.T) {
 
 	/*
@@ -125,27 +161,27 @@ func TestShowTable(t *testing.T) {
 		{
 			name: "One row",
 			in:   [][]string{{"url1", "user1", "password1", "1", "5.00", "instant"}},
-			out: `  URL  | USERNAME | PASSWORD  |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
--------+----------+-----------+------------------+--------------------------
-  url1 | user1    | password1 | [101m 1 - Bad        [0m | instant                  
+			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
+-------+----------+----------+------------------+--------------------------
+  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                  
 `,
 		},
 		{
 			name: "Five rows with different colors",
 			in: [][]string{
-				{"url0", "user0", "password0", "0", "5.00", "instant"},
-				{"url1", "user1", "password1", "1", "5.00", "instant"},
-				{"url2", "user2", "password2", "2", "5.00", "instant"},
-				{"url3", "user3", "password3", "3", "5.00", "instant"},
-				{"url4", "user4", "password4", "4", "5.00", "instant"},
+				{"url0", "user0", "p******0", "0", "5.00", "instant"},
+				{"url1", "user1", "p******1", "1", "5.00", "instant"},
+				{"url2", "user2", "p******2", "2", "5.00", "instant"},
+				{"url3", "user3", "p******3", "3", "5.00", "instant"},
+				{"url4", "user4", "p******4", "4", "5.00", "instant"},
 			},
-			out: `  URL  | USERNAME | PASSWORD  |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
--------+----------+-----------+------------------+--------------------------
-  url0 | user0    | password0 | [41m 0 - Really bad [0m | instant                  
-  url1 | user1    | password1 | [101m 1 - Bad        [0m | instant                  
-  url2 | user2    | password2 | [103m 2 - Weak       [0m | instant                  
-  url3 | user3    | password3 | [102m 3 - Good       [0m | instant                  
-  url4 | user4    | password4 | [42m 4 - Strong     [0m | instant                  
+			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
+-------+----------+----------+------------------+--------------------------
+  url0 | user0    | p******0 | [41m 0 - Really bad [0m | instant                  
+  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                  
+  url2 | user2    | p******2 | [103m 2 - Weak       [0m | instant                  
+  url3 | user3    | p******3 | [102m 3 - Good       [0m | instant                  
+  url4 | user4    | p******4 | [42m 4 - Strong     [0m | instant                  
 `,
 		},
 	}

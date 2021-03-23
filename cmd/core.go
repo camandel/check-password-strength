@@ -143,6 +143,13 @@ func checkCSVHeader(header []string) (csvHeaderOrder, error) {
 	return order, nil
 }
 
+func redactPassword(p string) string {
+	if len(p) < 3 {
+		return "********"
+	}
+	return fmt.Sprintf("%s******%s", p[0:1], p[len(p)-1:])
+}
+
 func showTable(data [][]string, w io.Writer) {
 
 	table := tablewriter.NewWriter(w)
@@ -172,7 +179,7 @@ func showTable(data [][]string, w io.Writer) {
 			scoreColor = tablewriter.BgGreenColor
 		}
 
-		colorRow := []string{row[0], row[1], row[2], score, row[5]}
+		colorRow := []string{row[0], row[1], redactPassword(row[2]), score, row[5]}
 		table.Rich(colorRow, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 
 	}
