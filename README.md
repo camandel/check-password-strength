@@ -111,7 +111,7 @@ If you need to add your custom dictionaries create one ore more json file in `as
 
 ```json
 {
-    "list": [
+    "words": [
         "foo",
         "bar",
     ]

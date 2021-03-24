@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -27,32 +28,86 @@ type csvRow struct {
 }
 
 type jsonData struct {
-	List []string `json:"list"`
+	Words []string `json:"words"`
 }
 
-func checkPassword(filename string) error {
+func loadBundledDict() ([]string, error) {
 
-	var customData []string
+	var assetDict []string
 
-	// Add custom data from assets
 	for _, an := range assets.AssetNames() {
 
 		var d jsonData
 
 		data, err := assets.Asset(an)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = json.Unmarshal(data, &d)
 		if err != nil {
+			return nil, err
+		}
+
+		assetDict = append(assetDict, d.Words...)
+	}
+
+	return assetDict, nil
+}
+
+func loadCustomDict(filename string) ([]string, error) {
+
+	var customDict []string
+	var d jsonData
+
+	log.Debugf("custom dict filename: %s", filename)
+
+	// Open json file
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, &d)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(d.Words) == 0 {
+		return nil, errors.New("Object 'words' is empty, custom dictionary not loaded")
+	}
+
+	customDict = append(customDict, d.Words...)
+
+	return customDict, nil
+}
+
+func checkPassword(csvfile, jsonfile string) error {
+
+	// load bundled dictionaries
+	assetDict, err := loadBundledDict()
+	if err != nil {
+		log.Debug("errore loading bundled dictionaries")
+		return err
+	}
+
+	// load custom dictionaries
+	if jsonfile != "" {
+		customDict, err := loadCustomDict(jsonfile)
+		if err != nil {
+			log.Debug("error loading custom dictionary")
 			return err
 		}
 
-		customData = append(customData, d.List...)
-
+		assetDict = append(assetDict, customDict...)
 	}
 
-	lines, order, err := readCsv(filename)
+	lines, order, err := readCsv(csvfile)
 	if err != nil {
 		return err
 	}
@@ -67,12 +122,12 @@ func checkPassword(filename string) error {
 			Password: line[order["password"]],
 		}
 
-		passwordStenght := zxcvbn.PasswordStrength(data.Password, append(customData, data.Username))
+		passwordStength := zxcvbn.PasswordStrength(data.Password, append(assetDict, data.Username))
 
 		output = append(output, []string{data.URL, data.Username, data.Password,
-			fmt.Sprintf("%d", passwordStenght.Score),
-			fmt.Sprintf("%.2f", passwordStenght.Entropy),
-			passwordStenght.CrackTimeDisplay})
+			fmt.Sprintf("%d", passwordStength.Score),
+			fmt.Sprintf("%.2f", passwordStength.Entropy),
+			passwordStength.CrackTimeDisplay})
 	}
 
 	showTable(output, colorable.NewColorableStdout())
@@ -82,7 +137,7 @@ func checkPassword(filename string) error {
 
 func readCsv(filename string) ([][]string, csvHeaderOrder, error) {
 
-	log.Debugf("filename: %s", filename)
+	log.Debugf("csv filename: %s", filename)
 
 	// Open CSV file
 	f, err := os.Open(filename)
