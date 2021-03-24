@@ -13,13 +13,20 @@ var log = New(Level).Sugar()
 func Execute() {
 
 	var debug bool
+	var customDict string
 
 	app := &cli.App{
 		Name:      "check-password-strength",
 		Usage:     "Check the passwords strength from csv file",
-		UsageText: "check-password-strength [--debug] CSVFILE",
+		UsageText: "check-password-strength [--customdict JSONFILE] [--debug] CSVFILE",
 		Version:   Version,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "customdict",
+				Aliases:     []string{"c"},
+				Usage:       "Load custom dictionary from `JSONFILE`",
+				Destination: &customDict,
+			},
 			&cli.BoolFlag{Name: "debug",
 				Aliases:     []string{"d"},
 				Destination: &debug,
@@ -38,7 +45,7 @@ func Execute() {
 				cli.ShowAppHelpAndExit(c, 1)
 			}
 
-			return checkPassword(c.Args().First())
+			return checkPassword(c.Args().First(), customDict)
 		},
 	}
 
