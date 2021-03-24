@@ -294,3 +294,69 @@ func TestReadCSV(t *testing.T) {
 		})
 	}
 }
+
+func TestReadJSON(t *testing.T) {
+
+	testdir := fmt.Sprintf("..%ctest%c", os.PathSeparator, os.PathSeparator)
+	filenotfound := fmt.Sprintf("open %snot-exists.json: no such file or directory", testdir)
+	if runtime.GOOS == "windows" {
+		filenotfound = fmt.Sprintf("open %snot-exists.json: The system cannot find the file specified.", testdir)
+	}
+
+	tests := []struct {
+		name string
+		in   string
+		out  []string
+		err  error
+	}{
+		{
+			name: "Correct json file",
+			in:   testdir + "words.json",
+			out:  []string{"polygon-approve-entire-coexist", "Gsg#H4k#*966Dx"},
+			err:  nil,
+		},
+		{
+			name: "Wrong json file",
+			in:   testdir + "wrong-name.json",
+			out:  nil,
+			err:  errors.New("Object 'words' is empty, custom dictionary not loaded"),
+		},
+		{
+			name: "Empty csv file",
+			in:   testdir + "empty.json",
+			out:  nil,
+			err:  errors.New("unexpected end of JSON input"),
+		},
+		{
+			name: "Not existing json file",
+			in:   testdir + "not-exists.json",
+			out:  nil,
+			err:  errors.New(filenotfound),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			out, err := loadCustomDict(tt.in)
+
+			if err != nil {
+				if tt.err == nil {
+					t.Fatalf("got error: %v, want nil error", err)
+				}
+				if err.Error() != tt.err.Error() {
+					t.Fatalf("got error: %v, want error: %v", err, tt.err)
+				}
+				return
+			}
+
+			if tt.err != nil {
+				t.Fatalf("got nil error, want error: %v", tt.err)
+			}
+
+			if !reflect.DeepEqual(tt.out, out) {
+				t.Fatalf("got %v, expected %v", out, tt.out)
+			}
+		})
+	}
+}
