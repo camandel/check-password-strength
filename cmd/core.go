@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"syscall"
 
 	"check-password-strength/assets"
 
 	colorable "github.com/mattn/go-colorable"
 	"github.com/nbutton23/zxcvbn-go"
 	"github.com/olekukonko/tablewriter"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type csvHeader map[string]*[]string
@@ -87,7 +89,24 @@ func loadCustomDict(filename string) ([]string, error) {
 	return customDict, nil
 }
 
-func checkPassword(csvfile, jsonfile string) error {
+func askUsernamePassword() (string, string, error) {
+
+	var username string
+
+	fmt.Print("Enter Username: ")
+	fmt.Scanln(&username)
+	fmt.Print("Enter Password: ")
+	password, err := terminal.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+
+	if err != nil {
+		return "", "", err
+	}
+
+	return username, string(password), nil
+
+}
+func checkPassword(csvfile, jsonfile string, interactive bool) error {
 
 	// load bundled dictionaries
 	assetDict, err := loadBundledDict()
@@ -105,6 +124,26 @@ func checkPassword(csvfile, jsonfile string) error {
 		}
 
 		assetDict = append(assetDict, customDict...)
+	}
+
+	if interactive {
+		username, password, err := askUsernamePassword()
+		if err != nil {
+			return err
+		}
+
+		var output [][]string
+
+		passwordStength := zxcvbn.PasswordStrength(password, append(assetDict, username))
+
+		output = append(output, []string{"", username, password,
+			fmt.Sprintf("%d", passwordStength.Score),
+			fmt.Sprintf("%.2f", passwordStength.Entropy),
+			passwordStength.CrackTimeDisplay})
+
+		showTable(output, colorable.NewColorableStdout())
+
+		return nil
 	}
 
 	lines, order, err := readCsv(csvfile)
