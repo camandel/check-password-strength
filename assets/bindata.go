@@ -82,7 +82,7 @@ func assetsDataItalianJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/data/Italian.json", size: 993269, mode: os.FileMode(436), modTime: time.Unix(1616579172, 0)}
+	info := bindataFileInfo{name: "assets/data/Italian.json", size: 993269, mode: os.FileMode(436), modTime: time.Unix(1616868498, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -102,7 +102,7 @@ func assetsDataItaliannamesJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "assets/data/ItalianNames.json", size: 187768, mode: os.FileMode(436), modTime: time.Unix(1616579162, 0)}
+	info := bindataFileInfo{name: "assets/data/ItalianNames.json", size: 187768, mode: os.FileMode(436), modTime: time.Unix(1616868498, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

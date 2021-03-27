@@ -2,14 +2,12 @@
 
 [![CI](https://github.com/camandel/check-password-strength/actions/workflows/ci.yml/badge.svg)](https://github.com/camandel/check-password-strength/actions/workflows/ci.yml) [![Build Release](https://github.com/camandel/check-password-strength/actions/workflows/release.yml/badge.svg)](https://github.com/camandel/check-password-strength/actions/workflows/release.yml)
 
-check-password-strength is an open-source tool that could help you to check how your passwords are good. It reads a CSV file and assigns a score to each password within a range from 0 (worst) to 4 (best):
+check-password-strength is a tool that runs on Linux, Windows and MacOS that could help you to check how your passwords are good. It reads data from a CSV file, user input or stdin and assigns a score to each password within a range from 0 (worst) to 4 (best):
 
-```bash
-$ ./check-password-strength password.csv
+```
+$ check-password-strength -f password.csv
 ```
 ![img](assets/img/screenshot.jpg?raw=true)
-
-It supports CSV files from exported from the most popular Password Managers and Browsers and runs on Linux, Windows and MacOS.
 
 It's based on the awesome [zxcvbn](https://github.com/dropbox/zxcvbn) library and its Go porting [zxcvbn-go](github.com/nbutton23/zxcvbn-go).
 
@@ -20,8 +18,9 @@ The passwords will be checked on:
 - common keyboards sequences
 - l33t substitutions
 - username as part of the password
+- a custom dictionary can be loaded at runtime
 
-## Suppoted CSV file formats
+It supports `CSV files` exported from the most popular Password Managers and Browsers:
 
 - [x] LastPass
 - [x] Bitwarden
@@ -32,23 +31,45 @@ The passwords will be checked on:
 
 (*) the custom CSV files must have a header with at least the following three fields: `url,username,password`
 
+To check only one password at a time it can be used in `interactive` mode (password will not be displayed as you type):
+```
+$ check-password-strength -i
+Enter Username: username
+Enter Password: 
+  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
+------+----------+----------+------------------+--------------------------
+      | username | p******d |  0 - Really bad  | instant
+```
+or reading from `stdin`:
+```
+$ echo $PASSWORD | check-password-strength
+  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
+------+----------+----------+------------------+--------------------------
+      |          | p******j |  4 - Strong      | centuries  
+```
+If you need to use it in a script you can use `-q` flag. It will display nothing on stdout and the `exit code` will contain the password score (it works only with single password):
+```
+$ echo $PASSWORD | ./check-password-strength -q
+$ echo $?
+4
+```
 ## Getting started
 
 ### Install
 
-Installation of check-password-strength is simple, just download [the release for your system](https://github.com/camandel/check-password-strength/releases) and run the binary passing a CSV file:
-```bash
-$ chmod +x ./check-password-strength
-$ ./check-password-strength password.csv
+Installation of check-password-strength is simple, just download [the release for your system](https://github.com/camandel/check-password-strength/releases) and run the binary:
+```
+$ chmod +x check-password-strength
+$ ./check-password-strength -f password.csv
 ```
 or run it in a Docker container:
 ```
-$ docker run --rm --net none -v $PWD:/data:ro camandel/check-password-strength /data/password.csv
+$ docker run --rm --net none -v $PWD:/data:ro camandel/check-password-strength -f /data/password.csv
 ```
 
 ### Building from source
 
-```shell linux
+```
 $ git clone https://github.com/camandel/check-password-strength
 
 $ cd check-password-strength
@@ -87,34 +108,43 @@ It will create a local image called `check-password-strength:latest`
 You can use command line or the Docker image:
 
 ```
-$ ./check-password-strength --help
+$ check-password-strength -h
 NAME:
-   check-password-strength - Check the passwords strength from csv file
+   check-password-strength - Check the passwords strength from csv file, console or stdin
 
 USAGE:
-   check-password-strength [--debug] CSVFILE
+   check-password-strength [options]
 
 VERSION:
-   v0.0.1
+   v0.0.2
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --debug, -d    show debug logs (default: false)
-   --help, -h     show help (default: false)
-   --version, -v  print the version (default: false)
+   --filename CSVFILE, -f CSVFILE      Check passwords from CSVFILE
+   --customdict JSONFILE, -c JSONFILE  Load custom dictionary from JSONFILE
+   --interactive, -i                   enable interactive mode asking data from console (default: false)
+   --quiet, -q                         return score as exit code (valid only with single password) (default: false)
+   --debug, -d                         show debug logs (default: false)
+   --help, -h                          show help (default: false)
+   --version, -v                       print the version (default: false)
 ```
 
-## How to add custom dictionaries
-If you need to add your custom dictionaries create one ore more json file in `assets/data/' with the following format:
+## How to add custom dictionary
+If you need to add your custom dictionary to the integrated ones, create one json file in the following format:
 
 ```json
 {
     "words": [
         "foo",
         "bar",
+        "baz",
     ]
 }
 ```
-and recompile.
+and load it at runtime with the `-c` flag:
+```
+$ check-password-strength -c customdict.json -f password.csv
+```
+Or add it directly into the binary copying the json file in `assets/data` and recompile.
