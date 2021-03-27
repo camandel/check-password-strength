@@ -48,16 +48,6 @@ func TestRedactPassword(t *testing.T) {
 }
 func TestReadCsv(t *testing.T) {
 
-	/*
-		CSV headers:
-
-		name,url,username,password (chrome)
-		"url","username","password" (firefox)
-		url,username,password (lastpass)
-		folder,favorite,type,name,notes,fields,login_uri,login_username,login_password (bitwarden)
-		"Group","Title","Username","Password","URL" (keepass)
-	*/
-
 	tests := []struct {
 		name string
 		in   []string
@@ -160,7 +150,7 @@ func TestShowTable(t *testing.T) {
 	}{
 		{
 			name: "One row",
-			in:   [][]string{{"url1", "user1", "password1", "1", "5.00", "instant"}},
+			in:   [][]string{{"url1", "user1", "p******1", "1", "5.00", "instant"}},
 			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
 -------+----------+----------+------------------+--------------------------
   url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                  
@@ -191,11 +181,6 @@ func TestShowTable(t *testing.T) {
 
 			buf := &bytes.Buffer{}
 			showTable(tt.in, buf)
-
-			// if diff := cmp.Diff(tt.out, buf.String()); diff != "" {
-			// 	t.Error(diff)
-			// 	t.Fatalf("got %s, expected %s", buf, tt.out)
-			// }
 
 			if !reflect.DeepEqual(tt.out, buf.String()) {
 				t.Fatalf("got %s, expected %s", buf.String(), tt.out)
