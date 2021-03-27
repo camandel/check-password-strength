@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -12,14 +12,13 @@ var log = New(Level).Sugar()
 // Execute main function
 func Execute() {
 
-	var interactive, debug bool
-	var filename, customDict string
+	var interactive, quiet, debug bool
+	var username, filename, customDict string
 
 	app := &cli.App{
 		Name:      "check-password-strength",
-		Usage:     "Check the passwords strength from csv file, interactively or stdin
-		",
-		UsageText: "check-password-strength [--customdict JSONFILE] [--interactive ]|[--filename CSVFILE]] [--debug]",
+		Usage:     "Check the passwords strength from csv file, console or stdin",
+		UsageText: "check-password-strength [options]",
 		Version:   Version,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -39,6 +38,11 @@ func Execute() {
 				Destination: &interactive,
 				Value:       false,
 				Usage:       "enable interactive mode asking data from console"},
+			&cli.BoolFlag{Name: "quiet",
+				Aliases:     []string{"q"},
+				Destination: &quiet,
+				Value:       false,
+				Usage:       "return score as exit code (valid only with single password)"},
 			&cli.BoolFlag{Name: "debug",
 				Aliases:     []string{"d"},
 				Destination: &debug,
@@ -52,18 +56,37 @@ func Execute() {
 				Level.SetLevel(DebugLevel)
 			}
 
-			if filename != "" && interactive {
-				fmt.Print("Can not use '-f' and '-i' flags at the same time\n\n")
+			password, err := getPwdStdin()
+			if err != nil && !interactive && filename == "" {
 				cli.ShowAppHelpAndExit(c, -1)
 			}
 
-			// if c.NArg() != 1 {
-			// 	fmt.Print("One filename must be specified\n\n")
-			// 	cli.ShowAppHelpAndExit(c, 1)
-			// }
+			log.Debugf("password from pipe: %s", redactPassword(password))
 
-			//return checkPassword(c.Args().First(), customDict)
-			return checkPassword(filename, customDict, interactive)
+			if filename != "" && interactive {
+				return errors.New("Can not use '-f' and '-i' flags at the same time")
+			}
+			if filename != "" && password != "" {
+				return errors.New("Can not use '-f' flag and read from stdin")
+			}
+			if interactive && password != "" {
+				return errors.New("Can not use '-i' flag and read from stdin")
+			}
+			if quiet && filename != "" {
+				return errors.New("Flag '-q' can be used only with '-i' flag or read from stdin")
+			}
+			if interactive {
+				username, password, err = askUsernamePassword()
+				if err != nil {
+					return err
+				}
+			}
+
+			if filename != "" {
+				return checkMultiplePassword(filename, customDict, interactive)
+			}
+			return checkSinglePassword(username, password, customDict, quiet)
+
 		},
 	}
 

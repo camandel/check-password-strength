@@ -33,7 +33,7 @@ type jsonData struct {
 	Words []string `json:"words"`
 }
 
-func loadBundledDict() ([]string, error) {
+func loadBundleDict() ([]string, error) {
 
 	var assetDict []string
 
@@ -63,7 +63,6 @@ func loadCustomDict(filename string) ([]string, error) {
 
 	log.Debugf("custom dict filename: %s", filename)
 
-	// Open json file
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -89,6 +88,27 @@ func loadCustomDict(filename string) ([]string, error) {
 	return customDict, nil
 }
 
+func loadAllDict(filename string) ([]string, error) {
+	// load bundle dictionaries
+	assetDict, err := loadBundleDict()
+	if err != nil {
+		log.Debug("errore loading bundled dictionaries")
+		return nil, err
+	}
+
+	// load custom dictionaries
+	if filename != "" {
+		customDict, err := loadCustomDict(filename)
+		if err != nil {
+			log.Debug("error loading custom dictionary")
+			return nil, err
+		}
+		assetDict = append(assetDict, customDict...)
+	}
+
+	return assetDict, nil
+}
+
 func askUsernamePassword() (string, string, error) {
 
 	var username string
@@ -104,46 +124,16 @@ func askUsernamePassword() (string, string, error) {
 	}
 
 	return username, string(password), nil
-
 }
-func checkPassword(csvfile, jsonfile string, interactive bool) error {
 
-	// load bundled dictionaries
-	assetDict, err := loadBundledDict()
+func checkMultiplePassword(csvfile, jsonfile string, interactive bool) error {
+
+	var output [][]string
+
+	// load all dictionaries
+	allDict, err := loadAllDict(jsonfile)
 	if err != nil {
-		log.Debug("errore loading bundled dictionaries")
 		return err
-	}
-
-	// load custom dictionaries
-	if jsonfile != "" {
-		customDict, err := loadCustomDict(jsonfile)
-		if err != nil {
-			log.Debug("error loading custom dictionary")
-			return err
-		}
-
-		assetDict = append(assetDict, customDict...)
-	}
-
-	if interactive {
-		username, password, err := askUsernamePassword()
-		if err != nil {
-			return err
-		}
-
-		var output [][]string
-
-		passwordStength := zxcvbn.PasswordStrength(password, append(assetDict, username))
-
-		output = append(output, []string{"", username, password,
-			fmt.Sprintf("%d", passwordStength.Score),
-			fmt.Sprintf("%.2f", passwordStength.Entropy),
-			passwordStength.CrackTimeDisplay})
-
-		showTable(output, colorable.NewColorableStdout())
-
-		return nil
 	}
 
 	lines, order, err := readCsv(csvfile)
@@ -152,8 +142,6 @@ func checkPassword(csvfile, jsonfile string, interactive bool) error {
 	}
 	log.Debugf("order: %v\n", order)
 
-	var output [][]string
-
 	for _, line := range lines {
 		data := csvRow{
 			URL:      line[order["url"]],
@@ -161,13 +149,40 @@ func checkPassword(csvfile, jsonfile string, interactive bool) error {
 			Password: line[order["password"]],
 		}
 
-		passwordStength := zxcvbn.PasswordStrength(data.Password, append(assetDict, data.Username))
-
+		passwordStength := zxcvbn.PasswordStrength(data.Password, append(allDict, data.Username))
+		data.Password = redactPassword(data.Password)
 		output = append(output, []string{data.URL, data.Username, data.Password,
 			fmt.Sprintf("%d", passwordStength.Score),
 			fmt.Sprintf("%.2f", passwordStength.Entropy),
 			passwordStength.CrackTimeDisplay})
 	}
+
+	showTable(output, colorable.NewColorableStdout())
+
+	return nil
+}
+
+func checkSinglePassword(username, password, jsonfile string, quiet bool) error {
+
+	var output [][]string
+
+	// load all dictionaries
+	allDict, err := loadAllDict(jsonfile)
+	if err != nil {
+		return err
+	}
+
+	passwordStength := zxcvbn.PasswordStrength(password, append(allDict, username))
+	password = redactPassword(password)
+
+	if quiet {
+		os.Exit(passwordStength.Score)
+	}
+
+	output = append(output, []string{"", username, password,
+		fmt.Sprintf("%d", passwordStength.Score),
+		fmt.Sprintf("%.2f", passwordStength.Entropy),
+		passwordStength.CrackTimeDisplay})
 
 	showTable(output, colorable.NewColorableStdout())
 
@@ -245,7 +260,7 @@ func redactPassword(p string) string {
 }
 
 func showTable(data [][]string, w io.Writer) {
-
+	// writer is a s parameter to pass buffer during tests
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"URL", "Username", "Password", "Score (0-4)", "Estimated time to crack"})
 	table.SetBorder(false)
@@ -273,10 +288,32 @@ func showTable(data [][]string, w io.Writer) {
 			scoreColor = tablewriter.BgGreenColor
 		}
 
-		colorRow := []string{row[0], row[1], redactPassword(row[2]), score, row[5]}
+		colorRow := []string{row[0], row[1], row[2], score, row[5]}
 		table.Rich(colorRow, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 
 	}
 
 	table.Render()
+}
+
+func getPwdStdin() (string, error) {
+
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	if info.Mode()&os.ModeCharDevice != 0 {
+		return "", errors.New("Pipe error on stdin")
+	}
+
+	stdinBytes, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return "", err
+	}
+
+	// remove spaces and new line
+	output := strings.TrimSpace(string(stdinBytes))
+
+	return output, nil
 }
