@@ -9,7 +9,7 @@ $ check-password-strength -f password.csv
 ```
 ![img](assets/img/screenshot.jpg?raw=true)
 
-It's based on the awesome [zxcvbn](https://github.com/dropbox/zxcvbn) library and its Go porting [zxcvbn-go](github.com/nbutton23/zxcvbn-go).
+It's based on the awesome [zxcvbn](https://github.com/dropbox/zxcvbn) library and its Go porting [zxcvbn-go](https://github.com/nbutton23/zxcvbn-go).
 
 The passwords will be checked on:
 - english words and names
