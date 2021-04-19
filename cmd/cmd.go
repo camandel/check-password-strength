@@ -12,7 +12,7 @@ var log = New(Level).Sugar()
 // Execute main function
 func Execute() {
 
-	var interactive, quiet, debug bool
+	var interactive, stats, quiet, debug bool
 	var username, filename, customDict string
 
 	app := &cli.App{
@@ -38,6 +38,11 @@ func Execute() {
 				Destination: &interactive,
 				Value:       false,
 				Usage:       "enable interactive mode asking data from console"},
+			&cli.BoolFlag{Name: "stats",
+				Aliases:     []string{"s"},
+				Destination: &stats,
+				Value:       false,
+				Usage:       "display only statistics"},
 			&cli.BoolFlag{Name: "quiet",
 				Aliases:     []string{"q"},
 				Destination: &quiet,
@@ -83,9 +88,9 @@ func Execute() {
 			}
 
 			if filename != "" {
-				return checkMultiplePassword(filename, customDict, interactive)
+				return checkMultiplePassword(filename, customDict, interactive, stats)
 			}
-			return checkSinglePassword(username, password, customDict, quiet)
+			return checkSinglePassword(username, password, customDict, quiet, stats)
 
 		},
 	}

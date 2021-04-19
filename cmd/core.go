@@ -33,6 +33,13 @@ type jsonData struct {
 	Words []string `json:"words"`
 }
 
+type statistics struct {
+	TotCount       int
+	WordsCount     int
+	ScoreCount     []int
+	DuplicateCount int
+}
+
 func loadBundleDict() ([]string, error) {
 
 	var assetDict []string
@@ -126,7 +133,7 @@ func askUsernamePassword() (string, string, error) {
 	return username, string(password), nil
 }
 
-func checkMultiplePassword(csvfile, jsonfile string, interactive bool) error {
+func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) error {
 
 	var output [][]string
 
@@ -135,6 +142,9 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive bool) error {
 	if err != nil {
 		return err
 	}
+
+	// initialize statistics
+	stat := initStats(len(allDict))
 
 	lines, order, err := readCsv(csvfile)
 	if err != nil {
@@ -155,14 +165,22 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive bool) error {
 			fmt.Sprintf("%d", passwordStength.Score),
 			fmt.Sprintf("%.2f", passwordStength.Entropy),
 			passwordStength.CrackTimeDisplay})
+
+		// update statistics
+		stat.ScoreCount[passwordStength.Score] = stat.ScoreCount[passwordStength.Score] + 1
+		stat.TotCount = stat.TotCount + 1
 	}
 
-	showTable(output, colorable.NewColorableStdout())
+	if stats {
+		showStats(stat, colorable.NewColorableStdout())
+	} else {
+		showTable(output, colorable.NewColorableStdout())
+	}
 
 	return nil
 }
 
-func checkSinglePassword(username, password, jsonfile string, quiet bool) error {
+func checkSinglePassword(username, password, jsonfile string, quiet, stats bool) error {
 
 	var output [][]string
 
@@ -172,8 +190,15 @@ func checkSinglePassword(username, password, jsonfile string, quiet bool) error 
 		return err
 	}
 
+	// initialize statistics
+	stat := initStats(len(allDict))
+
 	passwordStength := zxcvbn.PasswordStrength(password, append(allDict, username))
 	password = redactPassword(password)
+
+	// update statistics
+	stat.ScoreCount[passwordStength.Score] = stat.ScoreCount[passwordStength.Score] + 1
+	stat.TotCount = stat.TotCount + 1
 
 	if quiet {
 		os.Exit(passwordStength.Score)
@@ -184,7 +209,11 @@ func checkSinglePassword(username, password, jsonfile string, quiet bool) error 
 		fmt.Sprintf("%.2f", passwordStength.Entropy),
 		passwordStength.CrackTimeDisplay})
 
-	showTable(output, colorable.NewColorableStdout())
+	if stats {
+		showStats(stat, colorable.NewColorableStdout())
+	} else {
+		showTable(output, colorable.NewColorableStdout())
+	}
 
 	return nil
 }
@@ -259,6 +288,15 @@ func redactPassword(p string) string {
 	return fmt.Sprintf("%s******%s", p[0:1], p[len(p)-1:])
 }
 
+func initStats(c int) statistics {
+	return statistics{
+		TotCount:       0,
+		WordsCount:     c,
+		ScoreCount:     []int{0, 0, 0, 0, 0},
+		DuplicateCount: 0,
+	}
+}
+
 func showTable(data [][]string, w io.Writer) {
 	// writer is a s parameter to pass buffer during tests
 	table := tablewriter.NewWriter(w)
@@ -291,6 +329,31 @@ func showTable(data [][]string, w io.Writer) {
 		colorRow := []string{row[0], row[1], row[2], score, row[5]}
 		table.Rich(colorRow, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 
+	}
+
+	table.Render()
+}
+
+func showStats(stat statistics, w io.Writer) {
+	// writer is a s parameter to pass buffer during tests
+	table := tablewriter.NewWriter(w)
+	table.SetHeader([]string{"Description", "Count"})
+	table.SetBorder(false)
+	//table.SetAlignment(tablewriter.ALIGN_LEFT)
+
+	data := [][]string{
+		{"Password checked", fmt.Sprintf("%d", stat.TotCount)},
+		{"Words in dictionaries", fmt.Sprintf("%d", stat.WordsCount)},
+		{"Really bad passwords", fmt.Sprintf("%d", stat.ScoreCount[0])},
+		//{"Duplicated passwords", fmt.Sprintf("%d", stat.DuplicateCount)},
+		{"Bad passwords", fmt.Sprintf("%d", stat.ScoreCount[1])},
+		{"Weak passwords", fmt.Sprintf("%d", stat.ScoreCount[2])},
+		{"Good passwords", fmt.Sprintf("%d", stat.ScoreCount[3])},
+		{"Strong passwords", fmt.Sprintf("%d", stat.ScoreCount[4])},
+	}
+
+	for _, row := range data {
+		table.Append(row)
 	}
 
 	table.Render()

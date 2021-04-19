@@ -190,6 +190,67 @@ func TestShowTable(t *testing.T) {
 	}
 }
 
+func TestShowStats(t *testing.T) {
+
+	tests := []struct {
+		name string
+		in   statistics
+		out  string
+	}{
+		{
+			name: "Single row",
+			in: statistics{
+				TotCount:       1,
+				WordsCount:     59824,
+				ScoreCount:     []int{0, 0, 0, 0, 1},
+				DuplicateCount: 0,
+			},
+			out: `       DESCRIPTION      | COUNT  
+------------------------+--------
+  Password checked      |     1  
+  Words in dictionaries | 59824  
+  Really bad passwords  |     0  
+  Bad passwords         |     0  
+  Weak passwords        |     0  
+  Good passwords        |     0  
+  Strong passwords      |     1  
+`,
+		},
+		{
+			name: "Multiple row",
+			in: statistics{
+				TotCount:       9,
+				WordsCount:     59824,
+				ScoreCount:     []int{3, 1, 2, 1, 2},
+				DuplicateCount: 0,
+			},
+			out: `       DESCRIPTION      | COUNT  
+------------------------+--------
+  Password checked      |     9  
+  Words in dictionaries | 59824  
+  Really bad passwords  |     3  
+  Bad passwords         |     1  
+  Weak passwords        |     2  
+  Good passwords        |     1  
+  Strong passwords      |     2  
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			buf := &bytes.Buffer{}
+			showStats(tt.in, buf)
+
+			if !reflect.DeepEqual(tt.out, buf.String()) {
+				t.Fatalf("got %s, expected %s", buf.String(), tt.out)
+			}
+
+		})
+	}
+}
+
 func TestReadCSV(t *testing.T) {
 
 	type CSVData struct {
