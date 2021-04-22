@@ -18,6 +18,7 @@ The passwords will be checked on:
 - common keyboards sequences
 - l33t substitutions
 - username as part of the password
+- duplicated passwords
 - a custom dictionary can be loaded at runtime
 
 It supports `CSV files` exported from the most popular Password Managers and Browsers:
@@ -36,16 +37,16 @@ To check only one password at a time it can be used in `interactive` mode (passw
 $ check-password-strength -i
 Enter Username: username
 Enter Password: 
-  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
-------+----------+----------+------------------+--------------------------
-      | username | p******d |  0 - Really bad  | instant
+  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED   
+------+----------+----------+------------------+-------------------------+---------------
+      | username | p******d |  0 - Really bad  | instant                 |
 ```
 or reading from `stdin`:
 ```
 $ echo $PASSWORD | check-password-strength
-  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
-------+----------+----------+------------------+--------------------------
-      |          | p******j |  4 - Strong      | centuries  
+  URL | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED  
+------+----------+----------+------------------+-------------------------+---------------
+      |          | p******j |  4 - Strong      | centuries               |
 ```
 If you need to use it in a script you can use `-q` flag. It will display nothing on stdout and the `exit code` will contain the password score (it works only with single password):
 ```
@@ -116,7 +117,7 @@ USAGE:
    check-password-strength [options]
 
 VERSION:
-   v0.0.2
+   v0.0.3
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
@@ -125,6 +126,7 @@ GLOBAL OPTIONS:
    --filename CSVFILE, -f CSVFILE      Check passwords from CSVFILE
    --customdict JSONFILE, -c JSONFILE  Load custom dictionary from JSONFILE
    --interactive, -i                   enable interactive mode asking data from console (default: false)
+   --stats, -s                         display only statistics (default: false)
    --quiet, -q                         return score as exit code (valid only with single password) (default: false)
    --debug, -d                         show debug logs (default: false)
    --help, -h                          show help (default: false)
