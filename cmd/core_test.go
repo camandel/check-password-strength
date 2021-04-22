@@ -46,6 +46,47 @@ func TestRedactPassword(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateHash(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		seed     []byte
+		password string
+		out      string
+	}{
+		{
+			name:     "first password",
+			seed:     []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			password: "password",
+			out:      "c7f42603",
+		},
+		{
+			name:     "same seed and different password",
+			seed:     []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			password: "otherpassword",
+			out:      "1413a414",
+		},
+		{
+			name:     "same password but different seed",
+			seed:     []byte{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+			password: "password",
+			out:      "4b124f90",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := generateHash(tt.seed, tt.password)
+
+			if !reflect.DeepEqual(tt.out, h) {
+				t.Fatalf("got %s, expected %s", h, tt.out)
+			}
+
+		})
+	}
+}
+
 func TestReadCsv(t *testing.T) {
 
 	tests := []struct {
@@ -149,29 +190,47 @@ func TestShowTable(t *testing.T) {
 		out  string
 	}{
 		{
-			name: "One row",
-			in:   [][]string{{"url1", "user1", "p******1", "1", "5.00", "instant"}},
-			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
--------+----------+----------+------------------+--------------------------
-  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                  
+			name: "Single row",
+			in:   [][]string{{"url1", "user1", "p******1", "1", "5.00", "instant", ""}},
+			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED  
+-------+----------+----------+------------------+-------------------------+---------------
+  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                 |               
 `,
 		},
 		{
-			name: "Five rows with different colors",
+			name: "Multiple rows no duplicates",
 			in: [][]string{
-				{"url0", "user0", "p******0", "0", "5.00", "instant"},
-				{"url1", "user1", "p******1", "1", "5.00", "instant"},
-				{"url2", "user2", "p******2", "2", "5.00", "instant"},
-				{"url3", "user3", "p******3", "3", "5.00", "instant"},
-				{"url4", "user4", "p******4", "4", "5.00", "instant"},
+				{"url0", "user0", "p******0", "0", "5.00", "instant", ""},
+				{"url1", "user1", "p******1", "1", "5.00", "instant", ""},
+				{"url2", "user2", "p******2", "2", "5.00", "instant", ""},
+				{"url3", "user3", "p******3", "3", "5.00", "instant", ""},
+				{"url4", "user4", "p******4", "4", "5.00", "instant", ""},
 			},
-			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK  
--------+----------+----------+------------------+--------------------------
-  url0 | user0    | p******0 | [41m 0 - Really bad [0m | instant                  
-  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                  
-  url2 | user2    | p******2 | [103m 2 - Weak       [0m | instant                  
-  url3 | user3    | p******3 | [102m 3 - Good       [0m | instant                  
-  url4 | user4    | p******4 | [42m 4 - Strong     [0m | instant                  
+			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED  
+-------+----------+----------+------------------+-------------------------+---------------
+  url0 | user0    | p******0 | [41m 0 - Really bad [0m | instant                 |               
+  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                 |               
+  url2 | user2    | p******2 | [103m 2 - Weak       [0m | instant                 |               
+  url3 | user3    | p******3 | [102m 3 - Good       [0m | instant                 |               
+  url4 | user4    | p******4 | [42m 4 - Strong     [0m | instant                 |               
+`,
+		},
+		{
+			name: "Multiple rows with duplicates",
+			in: [][]string{
+				{"url0", "user0", "p******0", "0", "5.00", "instant", "aaaaaaaa"},
+				{"url1", "user1", "p******1", "1", "5.00", "instant", "bbbbbbbb"},
+				{"url2", "user2", "p******0", "0", "5.00", "instant", "aaaaaaaa"},
+				{"url3", "user3", "p******3", "3", "5.00", "instant", ""},
+				{"url4", "user4", "p******1", "1", "5.00", "instant", "bbbbbbbb"},
+			},
+			out: `  URL  | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED  
+-------+----------+----------+------------------+-------------------------+---------------
+  url0 | user0    | p******0 | [41m 0 - Really bad [0m | instant                 | aaaaaaaa      
+  url1 | user1    | p******1 | [101m 1 - Bad        [0m | instant                 | bbbbbbbb      
+  url2 | user2    | p******0 | [41m 0 - Really bad [0m | instant                 | aaaaaaaa      
+  url3 | user3    | p******3 | [102m 3 - Good       [0m | instant                 |               
+  url4 | user4    | p******1 | [101m 1 - Bad        [0m | instant                 | bbbbbbbb      
 `,
 		},
 	}
@@ -209,6 +268,7 @@ func TestShowStats(t *testing.T) {
 ------------------------+--------
   Password checked      |     1  
   Words in dictionaries | 59824  
+  Duplicated passwords  |     0  
   Really bad passwords  |     0  
   Bad passwords         |     0  
   Weak passwords        |     0  
@@ -222,12 +282,13 @@ func TestShowStats(t *testing.T) {
 				TotCount:       9,
 				WordsCount:     59824,
 				ScoreCount:     []int{3, 1, 2, 1, 2},
-				DuplicateCount: 0,
+				DuplicateCount: 2,
 			},
 			out: `       DESCRIPTION      | COUNT  
 ------------------------+--------
   Password checked      |     9  
   Words in dictionaries | 59824  
+  Duplicated passwords  |     2  
   Really bad passwords  |     3  
   Bad passwords         |     1  
   Weak passwords        |     2  

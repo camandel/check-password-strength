@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"crypto/rand"
+	"crypto/sha512"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -39,6 +41,8 @@ type statistics struct {
 	ScoreCount     []int
 	DuplicateCount int
 }
+
+type duplicates map[string][]int
 
 func loadBundleDict() ([]string, error) {
 
@@ -145,6 +149,13 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) er
 
 	// initialize statistics
 	stat := initStats(len(allDict))
+	duplicate := duplicates{}
+
+	// generate seed
+	seed, err := generateSeed()
+	if err != nil {
+		return err
+	}
 
 	lines, order, err := readCsv(csvfile)
 	if err != nil {
@@ -152,7 +163,7 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) er
 	}
 	log.Debugf("order: %v\n", order)
 
-	for _, line := range lines {
+	for n, line := range lines {
 		data := csvRow{
 			URL:      line[order["url"]],
 			Username: line[order["username"]],
@@ -160,17 +171,36 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) er
 		}
 
 		passwordStength := zxcvbn.PasswordStrength(data.Password, append(allDict, data.Username))
+
+		hash := generateHash(seed, data.Password)
+
+		// check if password is already used
+		duplicate[hash] = append(duplicate[hash], n)
+
 		data.Password = redactPassword(data.Password)
 		output = append(output, []string{data.URL, data.Username, data.Password,
 			fmt.Sprintf("%d", passwordStength.Score),
 			fmt.Sprintf("%.2f", passwordStength.Entropy),
-			passwordStength.CrackTimeDisplay})
+			passwordStength.CrackTimeDisplay,
+			"",
+		})
 
 		// update statistics
 		stat.ScoreCount[passwordStength.Score] = stat.ScoreCount[passwordStength.Score] + 1
 		stat.TotCount = stat.TotCount + 1
 	}
 
+	// add hash to identify duplicated passwords
+	for h, v := range duplicate {
+		if len(v) > 1 {
+			for _, i := range v {
+				output[i][6] = h
+				stat.DuplicateCount = stat.DuplicateCount + 1
+			}
+		}
+	}
+
+	// show statistics report
 	if stats {
 		showStats(stat, colorable.NewColorableStdout())
 	} else {
@@ -207,7 +237,9 @@ func checkSinglePassword(username, password, jsonfile string, quiet, stats bool)
 	output = append(output, []string{"", username, password,
 		fmt.Sprintf("%d", passwordStength.Score),
 		fmt.Sprintf("%.2f", passwordStength.Entropy),
-		passwordStength.CrackTimeDisplay})
+		passwordStength.CrackTimeDisplay,
+		"",
+	})
 
 	if stats {
 		showStats(stat, colorable.NewColorableStdout())
@@ -288,6 +320,20 @@ func redactPassword(p string) string {
 	return fmt.Sprintf("%s******%s", p[0:1], p[len(p)-1:])
 }
 
+func generateSeed() ([]byte, error) {
+	buf := make([]byte, 16)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
+func generateHash(seed []byte, password string) string {
+	sha1 := sha512.Sum512(append(seed, []byte(password)...))
+	return fmt.Sprintf("%x", sha1)[:8]
+}
+
 func initStats(c int) statistics {
 	return statistics{
 		TotCount:       0,
@@ -300,7 +346,7 @@ func initStats(c int) statistics {
 func showTable(data [][]string, w io.Writer) {
 	// writer is a s parameter to pass buffer during tests
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"URL", "Username", "Password", "Score (0-4)", "Estimated time to crack"})
+	table.SetHeader([]string{"URL", "Username", "Password", "Score (0-4)", "Estimated time to crack", "Already used"})
 	table.SetBorder(false)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 
@@ -326,7 +372,7 @@ func showTable(data [][]string, w io.Writer) {
 			scoreColor = tablewriter.BgGreenColor
 		}
 
-		colorRow := []string{row[0], row[1], row[2], score, row[5]}
+		colorRow := []string{row[0], row[1], row[2], score, row[5], row[6]}
 		table.Rich(colorRow, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 
 	}
@@ -339,13 +385,12 @@ func showStats(stat statistics, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Description", "Count"})
 	table.SetBorder(false)
-	//table.SetAlignment(tablewriter.ALIGN_LEFT)
 
 	data := [][]string{
 		{"Password checked", fmt.Sprintf("%d", stat.TotCount)},
 		{"Words in dictionaries", fmt.Sprintf("%d", stat.WordsCount)},
+		{"Duplicated passwords", fmt.Sprintf("%d", stat.DuplicateCount)},
 		{"Really bad passwords", fmt.Sprintf("%d", stat.ScoreCount[0])},
-		//{"Duplicated passwords", fmt.Sprintf("%d", stat.DuplicateCount)},
 		{"Bad passwords", fmt.Sprintf("%d", stat.ScoreCount[1])},
 		{"Weak passwords", fmt.Sprintf("%d", stat.ScoreCount[2])},
 		{"Good passwords", fmt.Sprintf("%d", stat.ScoreCount[3])},
