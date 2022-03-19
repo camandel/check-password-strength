@@ -276,6 +276,9 @@ func readCsv(filename string) ([][]string, csvHeaderOrder, error) {
 		return nil, nil, err
 	}
 
+	// remove note records
+	lines = removeNotes(lines)
+
 	// remove header
 	return lines[1:], order, nil
 }
@@ -311,6 +314,17 @@ func checkCSVHeader(header []string) (csvHeaderOrder, error) {
 		return nil, errors.New("Header not valid")
 	}
 	return order, nil
+}
+
+func removeNotes(lines [][]string) [][]string {
+	// remove Bitwarden notes (field 2: type = "note")
+	var nonotes [][]string
+	for _, line := range lines {
+		if line[2] != "note" {
+			nonotes = append(nonotes, line)
+		}
+	}
+	return nonotes
 }
 
 func redactPassword(p string) string {
