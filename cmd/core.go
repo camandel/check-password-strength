@@ -320,6 +320,19 @@ func redactPassword(p string) string {
 	return fmt.Sprintf("%s******%s", p[0:1], p[len(p)-1:])
 }
 
+func truncateURL(url string) string {
+	if len(url) > 25 && strings.HasPrefix(strings.ToLower(url), "https://") {
+		url = fmt.Sprintf("%s...", url[8:])
+	}
+	if len(url) > 25 && strings.HasPrefix(strings.ToLower(url), "http://") {
+		url = fmt.Sprintf("%s...", url[7:])
+	}
+	if len(url) > 25 {
+		return fmt.Sprintf("%s...", url[0:22])
+	}
+	return url
+}
+
 func generateSeed() ([]byte, error) {
 	buf := make([]byte, 16)
 	_, err := rand.Read(buf)
@@ -354,6 +367,8 @@ func showTable(data [][]string, w io.Writer) {
 		var score string
 		var scoreColor int
 
+		url := truncateURL(row[0])
+
 		switch row[3] {
 		case "0":
 			score = " 0 - Really bad "
@@ -372,7 +387,7 @@ func showTable(data [][]string, w io.Writer) {
 			scoreColor = tablewriter.BgGreenColor
 		}
 
-		colorRow := []string{row[0], row[1], row[2], score, row[5], row[6]}
+		colorRow := []string{url, row[1], row[2], score, row[5], row[6]}
 		table.Rich(colorRow, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 
 	}
