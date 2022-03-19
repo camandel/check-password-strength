@@ -216,6 +216,26 @@ func TestShowTable(t *testing.T) {
 `,
 		},
 		{
+			name: "Multiple rows with long url",
+			in: [][]string{
+				{"url0", "user0", "p******0", "0", "5.00", "instant", ""},
+				{"https://url1", "user1", "p******1", "1", "5.00", "instant", ""},
+				{"http://url2", "user2", "p******2", "2", "5.00", "instant", ""},
+				{"url3/login/3333333333333333333333", "user3", "p******3", "3", "5.00", "instant", ""},
+				{"http://url4/login/444444444444444444444444", "user4", "p******4", "4", "5.00", "instant", ""},
+				{"https://url5/login/5555555555555555555555555", "user5", "p******5", "4", "5.00", "instant", ""},
+			},
+			out: `             URL            | USERNAME | PASSWORD |   SCORE (0-4)    | ESTIMATED TIME TO CRACK | ALREADY USED  
+----------------------------+----------+----------+------------------+-------------------------+---------------
+  url0                      | user0    | p******0 | [41m 0 - Really bad [0m | instant                 |               
+  https://url1              | user1    | p******1 | [101m 1 - Bad        [0m | instant                 |               
+  http://url2               | user2    | p******2 | [103m 2 - Weak       [0m | instant                 |               
+  url3/login/33333333333... | user3    | p******3 | [102m 3 - Good       [0m | instant                 |               
+  url4/login/44444444444... | user4    | p******4 | [42m 4 - Strong     [0m | instant                 |               
+  url5/login/55555555555... | user5    | p******5 | [42m 4 - Strong     [0m | instant                 |               
+`,
+		},
+		{
 			name: "Multiple rows with duplicates",
 			in: [][]string{
 				{"url0", "user0", "p******0", "0", "5.00", "instant", "aaaaaaaa"},
