@@ -121,8 +121,8 @@ func TestReadCsv(t *testing.T) {
 		},
 		{
 			name: "Bitwarden csv header",
-			in:   []string{"folder", "favorite", "type", "name", "notes", "fields", "login_uri", "login_username", "login_password"},
-			out:  csvHeaderOrder{"url": 6, "username": 7, "password": 8},
+			in:   []string{"folder", "favorite", "type", "name", "notes", "fields", "repromt", "login_uri", "login_username", "login_password"},
+			out:  csvHeaderOrder{"url": 7, "username": 8, "password": 9},
 			err:  nil,
 		},
 		{
@@ -386,6 +386,15 @@ func TestReadCSV(t *testing.T) {
 				row:   [][]string{},
 				order: csvHeaderOrder{},
 				err:   errors.New(filenotfound),
+			},
+		},
+		{
+			name: "Bitwarden csv file with note",
+			in:   testdir + "bitwarden.csv",
+			out: CSVData{
+				row:   [][]string{{"", "", "login", "url1", "", "", "0", "url1", "user1", "password1", ""}, {"", "", "login", "url2", "", "", "0", "url2", "user2", "password2", ""}},
+				order: csvHeaderOrder{"url": 7, "username": 8, "password": 9},
+				err:   nil,
 			},
 		},
 	}

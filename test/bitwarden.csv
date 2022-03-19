@@ -1,0 +1,7 @@
+folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+,,login,url1,,,0,url1,user1,password1,
+,,note,note-multi,"Multi
+line
+note",,0,,,,
+,,note,note-single,"Single line note",,0,,,,
+,,login,url2,,,0,url2,user2,password2,
