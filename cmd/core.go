@@ -137,7 +137,7 @@ func askUsernamePassword() (string, string, error) {
 	return username, string(password), nil
 }
 
-func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) error {
+func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, limit int) error {
 
 	var output [][]string
 
@@ -174,20 +174,25 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool) er
 
 		hash := generateHash(seed, data.Password)
 
-		// check if password is already used
-		duplicate[hash] = append(duplicate[hash], n)
+		// filter output based on limit flag
+		if limit >= passwordStength.Score {
+			log.Debugf("Included: score: %d => filter: %d", passwordStength.Score, limit)
 
-		data.Password = redactPassword(data.Password)
-		output = append(output, []string{data.URL, data.Username, data.Password,
-			fmt.Sprintf("%d", passwordStength.Score),
-			fmt.Sprintf("%.2f", passwordStength.Entropy),
-			passwordStength.CrackTimeDisplay,
-			"",
-		})
+			// check if password is already used
+			duplicate[hash] = append(duplicate[hash], n)
 
-		// update statistics
-		stat.ScoreCount[passwordStength.Score] = stat.ScoreCount[passwordStength.Score] + 1
-		stat.TotCount = stat.TotCount + 1
+			data.Password = redactPassword(data.Password)
+			output = append(output, []string{data.URL, data.Username, data.Password,
+				fmt.Sprintf("%d", passwordStength.Score),
+				fmt.Sprintf("%.2f", passwordStength.Entropy),
+				passwordStength.CrackTimeDisplay,
+				"",
+			})
+			// update statistics
+			stat.ScoreCount[passwordStength.Score] = stat.ScoreCount[passwordStength.Score] + 1
+			stat.TotCount = stat.TotCount + 1
+		}
+
 	}
 
 	// add hash to identify duplicated passwords
