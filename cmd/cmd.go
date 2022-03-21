@@ -14,6 +14,7 @@ func Execute() {
 
 	var interactive, stats, quiet, debug bool
 	var username, filename, customDict string
+	var limit int
 
 	app := &cli.App{
 		Name:      "check-password-strength",
@@ -33,26 +34,41 @@ func Execute() {
 				Usage:       "Load custom dictionary from `JSONFILE`",
 				Destination: &customDict,
 			},
-			&cli.BoolFlag{Name: "interactive",
+			&cli.BoolFlag{
+				Name:        "interactive",
 				Aliases:     []string{"i"},
 				Destination: &interactive,
 				Value:       false,
-				Usage:       "enable interactive mode asking data from console"},
-			&cli.BoolFlag{Name: "stats",
+				Usage:       "enable interactive mode asking data from console",
+			},
+			&cli.BoolFlag{
+				Name:        "stats",
 				Aliases:     []string{"s"},
 				Destination: &stats,
 				Value:       false,
-				Usage:       "display only statistics"},
-			&cli.BoolFlag{Name: "quiet",
+				Usage:       "display only statistics",
+			},
+			&cli.BoolFlag{
+				Name:        "quiet",
 				Aliases:     []string{"q"},
 				Destination: &quiet,
 				Value:       false,
-				Usage:       "return score as exit code (valid only with single password)"},
-			&cli.BoolFlag{Name: "debug",
+				Usage:       "return score as exit code (valid only with single password)",
+			},
+			&cli.IntFlag{
+				Name:        "limit",
+				Aliases:     []string{"l"},
+				Usage:       "Limit output based on score [0-4] (valid only with csv file)",
+				Value:       5,
+				Destination: &limit,
+			},
+			&cli.BoolFlag{
+				Name:        "debug",
 				Aliases:     []string{"d"},
 				Destination: &debug,
 				Value:       false,
-				Usage:       "show debug logs"},
+				Usage:       "show debug logs",
+			},
 		},
 		HideHelpCommand: false,
 		Action: func(c *cli.Context) error {
@@ -80,6 +96,12 @@ func Execute() {
 			if quiet && filename != "" {
 				return errors.New("Flag '-q' can be used only with '-i' flag or read from stdin")
 			}
+			if interactive && c.IsSet("limit") {
+				return errors.New("Flag '-l' can be used only with '-f' flag")
+			}
+			if c.IsSet("limit") && (limit < 0 || limit > 4) {
+				return errors.New("Show only passwords with score less than value (must be between 0 and 4)")
+			}
 			if interactive {
 				username, password, err = askUsernamePassword()
 				if err != nil {
@@ -88,7 +110,7 @@ func Execute() {
 			}
 
 			if filename != "" {
-				return checkMultiplePassword(filename, customDict, interactive, stats)
+				return checkMultiplePassword(filename, customDict, interactive, stats, limit)
 			}
 			return checkSinglePassword(username, password, customDict, quiet, stats)
 
