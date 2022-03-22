@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -39,6 +40,7 @@ type statistics struct {
 	TotCount       int
 	WordsCount     int
 	ScoreCount     []int
+	ScorePerc      []int
 	DuplicateCount int
 }
 
@@ -371,6 +373,7 @@ func initStats(c int) statistics {
 		TotCount:       0,
 		WordsCount:     c,
 		ScoreCount:     []int{0, 0, 0, 0, 0},
+		ScorePerc:      []int{0, 0, 0, 0, 0},
 		DuplicateCount: 0,
 	}
 }
@@ -417,25 +420,87 @@ func showTable(data [][]string, w io.Writer) {
 func showStats(stat statistics, w io.Writer) {
 	// writer is a s parameter to pass buffer during tests
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Description", "Count"})
+	table.SetHeader([]string{"Description", "Count", "%", "Bar"})
 	table.SetBorder(false)
+	table.SetAutoWrapText(false)
+
+	stat.ScorePerc = roundPercentage(stat.ScoreCount, stat.TotCount)
 
 	data := [][]string{
-		{"Password checked", fmt.Sprintf("%d", stat.TotCount)},
-		{"Words in dictionaries", fmt.Sprintf("%d", stat.WordsCount)},
-		{"Duplicated passwords", fmt.Sprintf("%d", stat.DuplicateCount)},
-		{"Really bad passwords", fmt.Sprintf("%d", stat.ScoreCount[0])},
-		{"Bad passwords", fmt.Sprintf("%d", stat.ScoreCount[1])},
-		{"Weak passwords", fmt.Sprintf("%d", stat.ScoreCount[2])},
-		{"Good passwords", fmt.Sprintf("%d", stat.ScoreCount[3])},
-		{"Strong passwords", fmt.Sprintf("%d", stat.ScoreCount[4])},
+		{"Password checked", fmt.Sprintf("%d", stat.TotCount), "", ""},
+		{"Words in dictionaries", fmt.Sprintf("%d", stat.WordsCount), "", ""},
+		{"Duplicated passwords", fmt.Sprintf("%d", stat.DuplicateCount), "", ""},
+		{"Really bad passwords", fmt.Sprintf("%d", stat.ScoreCount[0]), fmt.Sprintf("%3d%%", stat.ScorePerc[0]), showBarPerc(stat.ScorePerc[0])},
+		{"Bad passwords", fmt.Sprintf("%d", stat.ScoreCount[1]), fmt.Sprintf("%3d%%", stat.ScorePerc[1]), showBarPerc(stat.ScorePerc[1])},
+		{"Weak passwords", fmt.Sprintf("%d", stat.ScoreCount[2]), fmt.Sprintf("%3d%%", stat.ScorePerc[2]), showBarPerc(stat.ScorePerc[2])},
+		{"Good passwords", fmt.Sprintf("%d", stat.ScoreCount[3]), fmt.Sprintf("%3d%%", stat.ScorePerc[3]), showBarPerc(stat.ScorePerc[3])},
+		{"Strong passwords", fmt.Sprintf("%d", stat.ScoreCount[4]), fmt.Sprintf("%3d%%", stat.ScorePerc[4]), showBarPerc(stat.ScorePerc[4])},
 	}
 
-	for _, row := range data {
-		table.Append(row)
+	var scoreColor int
+	for i, row := range data {
+		switch i {
+		case 3:
+			scoreColor = tablewriter.BgRedColor
+		case 4:
+			scoreColor = tablewriter.BgHiRedColor
+		case 5:
+			scoreColor = tablewriter.BgHiYellowColor
+		case 6:
+			scoreColor = tablewriter.BgHiGreenColor
+		case 7:
+			scoreColor = tablewriter.BgGreenColor
+		}
+		// remove color is bar is 0%
+		if row[1] == "0" {
+			scoreColor = 0
+		}
+		table.Rich(row, []tablewriter.Colors{nil, nil, nil, {scoreColor}})
 	}
-
 	table.Render()
+}
+
+func showBarPerc(perc int) string {
+	return fmt.Sprintf("%v", strings.Repeat(" ", perc))
+}
+
+func roundPercentage(scoreCount []int, totCount int) []int {
+
+	type Percentage struct {
+		Value float32
+		Order int
+	}
+
+	roundedPerc := []int{}
+	dataset := []Percentage{}
+	totalPerc := 0
+
+	//percentages []float32
+	for i, score := range scoreCount {
+		perc := float32(score) / float32(totCount) * 100.0
+		dataset = append(dataset, Percentage{Value: perc, Order: i})
+		totalPerc += int(perc)
+	}
+	diffToAdd := 100 - totalPerc
+
+	// order by decimal
+	sort.Slice(dataset, func(i, j int) bool {
+		return dataset[i].Value-float32(int(dataset[i].Value)) > dataset[j].Value-float32(int(dataset[j].Value))
+	})
+	// distribute diff to get to 100%
+	for n := 0; n < diffToAdd; n++ {
+		dataset[n].Value++
+	}
+	// order by original position
+	sort.Slice(dataset, func(i, j int) bool {
+		return float32(dataset[i].Order) < float32(dataset[j].Order)
+	})
+
+	for _, n := range dataset {
+		roundedPerc = append(roundedPerc, int(n.Value))
+	}
+
+	return roundedPerc
 }
 
 func getPwdStdin() (string, error) {

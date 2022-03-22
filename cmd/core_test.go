@@ -262,7 +262,7 @@ func TestShowTable(t *testing.T) {
 			showTable(tt.in, buf)
 
 			if !reflect.DeepEqual(tt.out, buf.String()) {
-				t.Fatalf("got %s, expected %s", buf.String(), tt.out)
+				t.Fatalf("got %s, expected:\n%s", buf.String(), tt.out)
 			}
 
 		})
@@ -282,18 +282,19 @@ func TestShowStats(t *testing.T) {
 				TotCount:       1,
 				WordsCount:     59824,
 				ScoreCount:     []int{0, 0, 0, 0, 1},
+				ScorePerc:      []int{0, 0, 0, 0, 100},
 				DuplicateCount: 0,
 			},
-			out: `       DESCRIPTION      | COUNT  
-------------------------+--------
-  Password checked      |     1  
-  Words in dictionaries | 59824  
-  Duplicated passwords  |     0  
-  Really bad passwords  |     0  
-  Bad passwords         |     0  
-  Weak passwords        |     0  
-  Good passwords        |     0  
-  Strong passwords      |     1  
+			out: `       DESCRIPTION      | COUNT |  %   |                                                 BAR                                                   
+------------------------+-------+------+-------------------------------------------------------------------------------------------------------
+  Password checked      |     1 |      | [0m[0m                                                                                                      
+  Words in dictionaries | 59824 |      | [0m[0m                                                                                                      
+  Duplicated passwords  |     0 |      | [0m[0m                                                                                                      
+  Really bad passwords  |     0 |   0% | [0m[0m                                                                                                      
+  Bad passwords         |     0 |   0% | [0m[0m                                                                                                      
+  Weak passwords        |     0 |   0% | [0m[0m                                                                                                      
+  Good passwords        |     0 |   0% | [0m[0m                                                                                                      
+  Strong passwords      |     1 | 100% | [42m                                                                                                    [0m  
 `,
 		},
 		{
@@ -302,18 +303,19 @@ func TestShowStats(t *testing.T) {
 				TotCount:       9,
 				WordsCount:     59824,
 				ScoreCount:     []int{3, 1, 2, 1, 2},
+				ScorePerc:      []int{34, 11, 22, 11, 22},
 				DuplicateCount: 2,
 			},
-			out: `       DESCRIPTION      | COUNT  
-------------------------+--------
-  Password checked      |     9  
-  Words in dictionaries | 59824  
-  Duplicated passwords  |     2  
-  Really bad passwords  |     3  
-  Bad passwords         |     1  
-  Weak passwords        |     2  
-  Good passwords        |     1  
-  Strong passwords      |     2  
+			out: `       DESCRIPTION      | COUNT |  %   |                BAR                  
+------------------------+-------+------+-------------------------------------
+  Password checked      |     9 |      | [0m[0m                                    
+  Words in dictionaries | 59824 |      | [0m[0m                                    
+  Duplicated passwords  |     2 |      | [0m[0m                                    
+  Really bad passwords  |     3 |  34% | [41m                                  [0m  
+  Bad passwords         |     1 |  11% | [101m           [0m                         
+  Weak passwords        |     2 |  22% | [103m                      [0m              
+  Good passwords        |     1 |  11% | [102m           [0m                         
+  Strong passwords      |     2 |  22% | [42m                      [0m              
 `,
 		},
 	}
@@ -325,7 +327,64 @@ func TestShowStats(t *testing.T) {
 			showStats(tt.in, buf)
 
 			if !reflect.DeepEqual(tt.out, buf.String()) {
-				t.Fatalf("got %s, expected %s", buf.String(), tt.out)
+				t.Fatalf("got:\n %s\nexpected:\n %s", buf.String(), tt.out)
+			}
+
+		})
+	}
+}
+
+func TestRoundPercentages(t *testing.T) {
+
+	tests := []struct {
+		name string
+		in   statistics
+		out  []int
+	}{
+		{
+			name: "Single entry no round",
+			in: statistics{
+				TotCount:   1,
+				ScoreCount: []int{1, 0, 0, 0, 0},
+			},
+			out: []int{100, 0, 0, 0, 0},
+		},
+		{
+			name: "Two entries no round",
+			in: statistics{
+				TotCount:   2,
+				ScoreCount: []int{1, 0, 0, 0, 1},
+			},
+			out: []int{50, 0, 0, 0, 50},
+		},
+		{
+			name: "Three entries with round",
+			in: statistics{
+				TotCount:   3,
+				ScoreCount: []int{1, 1, 1, 0, 0},
+			},
+			out: []int{34, 33, 33, 0, 0},
+		},
+		{
+			name: "Five entries with round",
+			in: statistics{
+				TotCount:   18,
+				ScoreCount: []int{7, 1, 4, 2, 4},
+			},
+			out: []int{39, 6, 22, 11, 22},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			buf := &bytes.Buffer{}
+			showStats(tt.in, buf)
+
+			perc := roundPercentage(tt.in.ScoreCount, tt.in.TotCount)
+
+			if !reflect.DeepEqual(tt.out, perc) {
+				t.Fatalf("got: %v expected: %v", perc, tt.out)
 			}
 
 		})
