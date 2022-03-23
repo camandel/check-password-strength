@@ -128,7 +128,7 @@ GLOBAL OPTIONS:
    --interactive, -i                   enable interactive mode asking data from console (default: false)
    --stats, -s                         display only statistics (default: false)
    --quiet, -q                         return score as exit code (valid only with single password) (default: false)
-   --limit value, -l value             Limit output based on score [0-4] (valid only with csv file) (default: 5)
+   --limit value, -l value             Limit output based on score [0-4] (valid only with csv file) (default: 4)
    --debug, -d                         show debug logs (default: false)
    --help, -h                          show help (default: false)
    --version, -v                       print the version (default: false)
