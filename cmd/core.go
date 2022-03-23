@@ -165,7 +165,8 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, li
 	}
 	log.Debugf("order: %v\n", order)
 
-	for n, line := range lines {
+	index := 0
+	for _, line := range lines {
 		data := csvRow{
 			URL:      line[order["url"]],
 			Username: line[order["username"]],
@@ -174,14 +175,14 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, li
 
 		passwordStength := zxcvbn.PasswordStrength(data.Password, append(allDict, data.Username))
 
-		hash := generateHash(seed, data.Password)
-
 		// filter output based on limit flag
 		if limit >= passwordStength.Score {
 			log.Debugf("Included: score: %d => filter: %d", passwordStength.Score, limit)
 
 			// check if password is already used
-			duplicate[hash] = append(duplicate[hash], n)
+			hash := generateHash(seed, data.Password)
+			duplicate[hash] = append(duplicate[hash], index)
+			index++
 
 			data.Password = redactPassword(data.Password)
 			output = append(output, []string{data.URL, data.Username, data.Password,
@@ -198,6 +199,7 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, li
 	}
 
 	// add hash to identify duplicated passwords
+	log.Debugf("Start marking duplicates")
 	for h, v := range duplicate {
 		if len(v) > 1 {
 			for _, i := range v {
@@ -206,6 +208,7 @@ func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, li
 			}
 		}
 	}
+	log.Debugf("End marking duplicates")
 
 	// show statistics report
 	if stats {

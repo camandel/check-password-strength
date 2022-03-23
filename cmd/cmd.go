@@ -59,7 +59,7 @@ func Execute() {
 				Name:        "limit",
 				Aliases:     []string{"l"},
 				Usage:       "Limit output based on score [0-4] (valid only with csv file)",
-				Value:       5,
+				Value:       4,
 				Destination: &limit,
 			},
 			&cli.BoolFlag{
