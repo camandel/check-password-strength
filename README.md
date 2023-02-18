@@ -54,6 +54,12 @@ $ echo $PASSWORD | ./check-password-strength -q
 $ echo $?
 4
 ```
+You can also display overall statistics about your passwords:
+```
+$ check-password-strength -f password.csv --stats
+```
+![img](assets/img/stats-screenshot.jpg?raw=true)
+
 ## Getting started
 
 ### Install
@@ -117,7 +123,7 @@ USAGE:
    check-password-strength [options]
 
 VERSION:
-   v0.0.4
+   v0.0.5
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
