@@ -51,7 +51,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.arch }}
       - name: Upload to artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: ${{ env.RELEASE }}
 
@@ -61,7 +61,7 @@ jobs:
     needs: build
     steps:
       - name: download
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
       - name: Upload Archives to Release
         env:
           UPLOAD_URL: ${{ github.event.release.upload_url }}

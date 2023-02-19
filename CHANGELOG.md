@@ -1,5 +1,27 @@
 # Changelog
 
+## [v0.0.5](https://github.com/camandel/check-password-strength/tree/v0.0.5) (2023-02-19)
+
+[Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.4...v0.0.5)
+
+**Fixed bugs:**
+
+- Update dependencies [\#26](https://github.com/camandel/check-password-strength/issues/26)
+- Filter does not work with duplicates [\#24](https://github.com/camandel/check-password-strength/issues/24)
+
+**Closed issues:**
+
+- add stats screenshot [\#27](https://github.com/camandel/check-password-strength/issues/27)
+- Add CHANGELOG file [\#22](https://github.com/camandel/check-password-strength/issues/22)
+
+**Merged pull requests:**
+
+- feat: new release compiled with go 1.20 [\#30](https://github.com/camandel/check-password-strength/pull/30) ([camandel](https://github.com/camandel))
+- feat: add stats screenshot [\#29](https://github.com/camandel/check-password-strength/pull/29) ([camandel](https://github.com/camandel))
+- fix: update dependencies [\#28](https://github.com/camandel/check-password-strength/pull/28) ([camandel](https://github.com/camandel))
+- fix: filter output with duplicated passwords [\#25](https://github.com/camandel/check-password-strength/pull/25) ([camandel](https://github.com/camandel))
+- feat: add CHANGELOG [\#23](https://github.com/camandel/check-password-strength/pull/23) ([camandel](https://github.com/camandel))
+
 ## [v0.0.4](https://github.com/camandel/check-password-strength/tree/v0.0.4) (2022-03-22)
 
 [Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.3...v0.0.4)
@@ -13,7 +35,7 @@
 **Fixed bugs:**
 
 - Notes on csv files generate wrong entries [\#14](https://github.com/camandel/check-password-strength/issues/14)
-- URL too long displays wrong [\#12](https://github.com/camandel/check-password-strength/issues/12)
+- URL too long displays worng [\#12](https://github.com/camandel/check-password-strength/issues/12)
 
 **Merged pull requests:**
 
