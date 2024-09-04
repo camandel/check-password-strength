@@ -63,6 +63,9 @@ jobs:
     steps:
       - name: download
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
       - name: Upload Archives to Release
         env:
           UPLOAD_URL: ${{ github.event.release.upload_url }}
@@ -70,7 +73,7 @@ jobs:
           AUTH_HEADER: "Authorization: token ${{ secrets.GITHUB_TOKEN }}"
         run: |
           UPLOAD_URL=$(echo -n $UPLOAD_URL | sed s/\{.*//g)
-          for FILE in artifact/*
+          for FILE in artifacts/*
           do
             echo "Uploading ${FILE}";
             curl \
@@ -88,7 +91,7 @@ jobs:
         run: |
           HASH_TABLE="| SHA256 Hash | Filename |"
           HASH_TABLE="${HASH_TABLE}\n|-----|-----|\n"
-          for FILE in artifact/*
+          for FILE in artifacts/*
           do
             FILENAME=$(basename ${FILE})
             HASH=$(sha256sum ${FILE} | cut -d ' ' -f 1)
