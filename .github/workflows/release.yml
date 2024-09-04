@@ -31,9 +31,9 @@ jobs:
             arch: "386"
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - if: matrix.arch == '386'
         run: echo "RELEASE=check-password-strength-${{ github.event.release.tag_name}}-${{ matrix.releaseos}}-32bit" >> $GITHUB_ENV
       - if: matrix.arch == 'amd64'
@@ -51,7 +51,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.arch }}
       - name: Upload to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: ${{ env.RELEASE }}
 
@@ -61,7 +61,7 @@ jobs:
     needs: build
     steps:
       - name: download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: Upload Archives to Release
         env:
           UPLOAD_URL: ${{ github.event.release.upload_url }}
@@ -110,12 +110,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Login to DockerHub
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        uses: docker/login-action@@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Build image
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
+        uses: docker/build-push-action@v6
         with:
           push: true
           tags: camandel/check-password-strength:${{ github.event.release.tag_name}}, camandel/check-password-strength:latest

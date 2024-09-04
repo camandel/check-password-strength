@@ -38,7 +38,7 @@ assets: go-bindata
 
 .PHONY: go-bindata
 go-bindata:
-	GOBIN=$(PROJDIR)/tools/bin go install github.com/go-bindata/go-bindata/go-bindata
+	GOBIN=$(PROJDIR)/tools/bin go install github.com/go-bindata/go-bindata/go-bindata@latest
 
 .PHONY: test
 test:
