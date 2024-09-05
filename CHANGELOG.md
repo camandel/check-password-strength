@@ -1,5 +1,30 @@
 # Changelog
 
+## [v0.0.7](https://github.com/camandel/check-password-strength/tree/v0.0.7) (2024-09-05)
+
+[Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.6...v0.0.7)
+
+**Implemented enhancements:**
+
+- Custom Wordlists: text format support [\#34](https://github.com/camandel/check-password-strength/issues/34)
+
+**Merged pull requests:**
+
+- feat: custom dictionaries can be in json or txt [\#35](https://github.com/camandel/check-password-strength/pull/35) ([camandel](https://github.com/camandel))
+
+## [v0.0.6](https://github.com/camandel/check-password-strength/tree/v0.0.6) (2024-09-04)
+
+[Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.5...v0.0.6)
+
+**Fixed bugs:**
+
+- Update dependencies  [\#32](https://github.com/camandel/check-password-strength/issues/32)
+
+**Merged pull requests:**
+
+- fix: update dependencies [\#33](https://github.com/camandel/check-password-strength/pull/33) ([camandel](https://github.com/camandel))
+- chore: update workflow [\#31](https://github.com/camandel/check-password-strength/pull/31) ([camandel](https://github.com/camandel))
+
 ## [v0.0.5](https://github.com/camandel/check-password-strength/tree/v0.0.5) (2023-02-19)
 
 [Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.4...v0.0.5)
