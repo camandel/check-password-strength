@@ -19,7 +19,7 @@ The passwords will be checked on:
 - l33t substitutions
 - username as part of the password
 - duplicated passwords
-- a custom dictionary can be loaded at runtime
+- a custom dictionary (json or txt) can be loaded at runtime
 
 It supports `CSV files` exported from the most popular Password Managers and Browsers:
 
@@ -123,14 +123,14 @@ USAGE:
    check-password-strength [options]
 
 VERSION:
-   v0.0.6
+   v0.0.7
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --filename CSVFILE, -f CSVFILE      Check passwords from CSVFILE
-   --customdict JSONFILE, -c JSONFILE  Load custom dictionary from JSONFILE
+   --customdict FILE, -c FILE          Load custom dictionary from FILE (json, txt or lst)
    --interactive, -i                   enable interactive mode asking data from console (default: false)
    --stats, -s                         display only statistics (default: false)
    --quiet, -q                         return score as exit code (valid only with single password) (default: false)
@@ -141,7 +141,7 @@ GLOBAL OPTIONS:
 ```
 
 ## How to add custom dictionary
-If you need to add your custom dictionary to the integrated ones, create one json file in the following format:
+If you need to add your custom dictionary to the integrated ones, create a `json` file in the following format:
 
 ```json
 {
@@ -151,6 +151,12 @@ If you need to add your custom dictionary to the integrated ones, create one jso
         "baz",
     ]
 }
+```
+or a `txt` file like this one:
+```
+foo
+bar
+baz
 ```
 and load it at runtime with the `-c` flag:
 ```

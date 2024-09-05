@@ -31,7 +31,7 @@ func Execute() {
 			&cli.StringFlag{
 				Name:        "customdict",
 				Aliases:     []string{"c"},
-				Usage:       "Load custom dictionary from `JSONFILE`",
+				Usage:       "Load custom dictionary from `FILE` (json, txt or lst)",
 				Destination: &customDict,
 			},
 			&cli.BoolFlag{
@@ -85,22 +85,22 @@ func Execute() {
 			log.Debugf("password from pipe: %s", redactPassword(password))
 
 			if filename != "" && interactive {
-				return errors.New("Can not use '-f' and '-i' flags at the same time")
+				return errors.New("can not use '-f' and '-i' flags at the same time")
 			}
 			if filename != "" && password != "" {
-				return errors.New("Can not use '-f' flag and read from stdin")
+				return errors.New("can not use '-f' flag and read from stdin")
 			}
 			if interactive && password != "" {
-				return errors.New("Can not use '-i' flag and read from stdin")
+				return errors.New("can not use '-i' flag and read from stdin")
 			}
 			if quiet && filename != "" {
-				return errors.New("Flag '-q' can be used only with '-i' flag or read from stdin")
+				return errors.New("flag '-q' can be used only with '-i' flag or read from stdin")
 			}
 			if interactive && c.IsSet("limit") {
-				return errors.New("Flag '-l' can be used only with '-f' flag")
+				return errors.New("flag '-l' can be used only with '-f' flag")
 			}
 			if c.IsSet("limit") && (limit < 0 || limit > 4) {
-				return errors.New("Show only passwords with score less than value (must be between 0 and 4)")
+				return errors.New("show only passwords with score less than value (must be between 0 and 4)")
 			}
 			if interactive {
 				username, password, err = askUsernamePassword()
@@ -110,7 +110,7 @@ func Execute() {
 			}
 
 			if filename != "" {
-				return checkMultiplePassword(filename, customDict, interactive, stats, limit)
+				return checkMultiplePassword(filename, customDict, stats, limit)
 			}
 			return checkSinglePassword(username, password, customDict, quiet, stats)
 

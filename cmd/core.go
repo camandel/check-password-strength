@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"syscall"
@@ -19,7 +21,7 @@ import (
 	colorable "github.com/mattn/go-colorable"
 	"github.com/nbutton23/zxcvbn-go"
 	"github.com/olekukonko/tablewriter"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 type csvHeader map[string]*[]string
@@ -73,6 +75,8 @@ func loadCustomDict(filename string) ([]string, error) {
 
 	var customDict []string
 	var d jsonData
+	var supportedExtensions = []string{".json", ".txt", ".lst"}
+	var lineBreakRegExp = regexp.MustCompile(`\r?\n`)
 
 	log.Debugf("custom dict filename: %s", filename)
 
@@ -82,22 +86,34 @@ func loadCustomDict(filename string) ([]string, error) {
 	}
 	defer f.Close()
 
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, &d)
-	if err != nil {
-		return nil, err
+	// check file type by extension
+	ext := filepath.Ext(filename)
+	if !slices.Contains(supportedExtensions, ext) {
+		err := fmt.Sprintf("%s is not valid, only %v are supported", ext, supportedExtensions)
+		return nil, errors.New(err)
 	}
 
-	if len(d.Words) == 0 {
-		return nil, errors.New("Object 'words' is empty, custom dictionary not loaded")
+	if ext == ".json" {
+		err = json.Unmarshal(data, &d)
+		if err != nil {
+			return nil, err
+		}
+		if len(d.Words) == 0 {
+			return nil, errors.New("object 'words' is empty, custom dictionary not loaded")
+		}
+		customDict = append(customDict, d.Words...)
+	} else {
+		// .txt or .lst
+		if len(data) == 0 {
+			return nil, errors.New("dictionary file is empty")
+		}
+		customDict = append(customDict, lineBreakRegExp.Split(string(data), -1)...)
 	}
-
-	customDict = append(customDict, d.Words...)
-
 	return customDict, nil
 }
 
@@ -105,7 +121,7 @@ func loadAllDict(filename string) ([]string, error) {
 	// load bundle dictionaries
 	assetDict, err := loadBundleDict()
 	if err != nil {
-		log.Debug("errore loading bundled dictionaries")
+		log.Debug("error loading bundled dictionaries")
 		return nil, err
 	}
 
@@ -129,7 +145,7 @@ func askUsernamePassword() (string, string, error) {
 	fmt.Print("Enter Username: ")
 	fmt.Scanln(&username)
 	fmt.Print("Enter Password: ")
-	password, err := terminal.ReadPassword(int(syscall.Stdin))
+	password, err := term.ReadPassword(int(syscall.Stdin))
 	fmt.Println()
 
 	if err != nil {
@@ -139,12 +155,12 @@ func askUsernamePassword() (string, string, error) {
 	return username, string(password), nil
 }
 
-func checkMultiplePassword(csvfile, jsonfile string, interactive, stats bool, limit int) error {
+func checkMultiplePassword(csvfile, dictfile string, stats bool, limit int) error {
 
 	var output [][]string
 
 	// load all dictionaries
-	allDict, err := loadAllDict(jsonfile)
+	allDict, err := loadAllDict(dictfile)
 	if err != nil {
 		return err
 	}
@@ -277,7 +293,7 @@ func readCsv(filename string) ([][]string, csvHeaderOrder, error) {
 	}
 
 	if len(lines) == 0 {
-		return nil, nil, errors.New("File empty")
+		return nil, nil, errors.New("csv file is empty")
 	}
 	header := lines[0]
 
@@ -312,7 +328,7 @@ func checkCSVHeader(header []string) (csvHeaderOrder, error) {
 			for _, v := range *h {
 				if strings.ToLower(fieldFromFile) == v {
 					if _, ok := order[k]; ok {
-						return nil, errors.New("Header not valid")
+						return nil, errors.New("header not valid")
 					}
 					order[k] = position
 				}
@@ -321,7 +337,7 @@ func checkCSVHeader(header []string) (csvHeaderOrder, error) {
 	}
 
 	if len(order) != 3 {
-		return nil, errors.New("Header not valid")
+		return nil, errors.New("header not valid")
 	}
 	return order, nil
 }
@@ -514,10 +530,10 @@ func getPwdStdin() (string, error) {
 	}
 
 	if info.Mode()&os.ModeCharDevice != 0 {
-		return "", errors.New("Pipe error on stdin")
+		return "", errors.New("pipe error on stdin")
 	}
 
-	stdinBytes, err := ioutil.ReadAll(os.Stdin)
+	stdinBytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return "", err
 	}

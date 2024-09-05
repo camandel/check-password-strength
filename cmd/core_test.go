@@ -141,25 +141,25 @@ func TestReadCsv(t *testing.T) {
 			name: "Missing field in csv header",
 			in:   []string{"Username", "Url"},
 			out:  csvHeaderOrder{},
-			err:  errors.New("Header not valid"),
+			err:  errors.New("header not valid"),
 		},
 		{
 			name: "Duplicate fields in csv header",
 			in:   []string{"Username", "Password", "Url", "login_username"},
 			out:  csvHeaderOrder{},
-			err:  errors.New("Header not valid"),
+			err:  errors.New("header not valid"),
 		},
 		{
 			name: "More fields with similar name in csv header",
 			in:   []string{"Username", "Password", "Url", "login_username"},
 			out:  csvHeaderOrder{},
-			err:  errors.New("Header not valid"),
+			err:  errors.New("header not valid"),
 		},
 		{
 			name: "No header",
 			in:   []string{},
 			out:  csvHeaderOrder{},
-			err:  errors.New("Header not valid"),
+			err:  errors.New("header not valid"),
 		},
 	}
 
@@ -435,7 +435,7 @@ func TestReadCSV(t *testing.T) {
 			out: CSVData{
 				row:   [][]string{},
 				order: csvHeaderOrder{},
-				err:   errors.New("File empty"),
+				err:   errors.New("csv file is empty"),
 			},
 		},
 		{
@@ -514,10 +514,10 @@ func TestReadJSON(t *testing.T) {
 			name: "Wrong json file",
 			in:   testdir + "wrong-name.json",
 			out:  nil,
-			err:  errors.New("Object 'words' is empty, custom dictionary not loaded"),
+			err:  errors.New("object 'words' is empty, custom dictionary not loaded"),
 		},
 		{
-			name: "Empty csv file",
+			name: "Empty json file",
 			in:   testdir + "empty.json",
 			out:  nil,
 			err:  errors.New("unexpected end of JSON input"),
@@ -525,6 +525,66 @@ func TestReadJSON(t *testing.T) {
 		{
 			name: "Not existing json file",
 			in:   testdir + "not-exists.json",
+			out:  nil,
+			err:  errors.New(filenotfound),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			out, err := loadCustomDict(tt.in)
+
+			if err != nil {
+				if tt.err == nil {
+					t.Fatalf("got error: %v, want nil error", err)
+				}
+				if err.Error() != tt.err.Error() {
+					t.Fatalf("got error: %v, want error: %v", err, tt.err)
+				}
+				return
+			}
+
+			if tt.err != nil {
+				t.Fatalf("got nil error, want error: %v", tt.err)
+			}
+
+			if !reflect.DeepEqual(tt.out, out) {
+				t.Fatalf("got %v, expected %v", out, tt.out)
+			}
+		})
+	}
+}
+
+func TestReadText(t *testing.T) {
+
+	testdir := fmt.Sprintf("..%ctest%c", os.PathSeparator, os.PathSeparator)
+	filenotfound := fmt.Sprintf("open %snot-exists.txt: no such file or directory", testdir)
+	if runtime.GOOS == "windows" {
+		filenotfound = fmt.Sprintf("open %snot-exists.txt: The system cannot find the file specified.", testdir)
+	}
+
+	tests := []struct {
+		name string
+		in   string
+		out  []string
+		err  error
+	}{
+		{
+			name: "Correct txt file",
+			in:   testdir + "words.txt",
+			out:  []string{"polygon-approve-entire-coexist", "Gsg#H4k#*966Dx"},
+			err:  nil,
+		},
+		{
+			name: "Empty txt file",
+			in:   testdir + "empty.txt",
+			out:  nil,
+			err:  errors.New("dictionary file is empty"),
+		},
+		{
+			name: "Not existing txt file",
+			in:   testdir + "not-exists.txt",
 			out:  nil,
 			err:  errors.New(filenotfound),
 		},
