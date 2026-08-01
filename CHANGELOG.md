@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.0.8](https://github.com/camandel/check-password-strength/tree/v0.0.8) (2026-08-01)
+
+[Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.7...v0.0.8)
+
+**Fixed bugs:**
+
+- Update dependencies  [\#37](https://github.com/camandel/check-password-strength/issues/37)
+
+**Merged pull requests:**
+
+- fix: update dependencies [\#36](https://github.com/camandel/check-password-strength/pull/36) ([camandel](https://github.com/camandel))
+
 ## [v0.0.7](https://github.com/camandel/check-password-strength/tree/v0.0.7) (2024-09-05)
 
 [Full Changelog](https://github.com/camandel/check-password-strength/compare/v0.0.6...v0.0.7)
