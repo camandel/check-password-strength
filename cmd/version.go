@@ -1,4 +1,4 @@
 package cmd
 
 // Version to display
-var Version = "v0.0.7"
+var Version = "v0.0.8"
